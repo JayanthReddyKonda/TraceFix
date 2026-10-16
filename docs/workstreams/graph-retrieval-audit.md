@@ -110,9 +110,10 @@ not verified implementations):
   (`src/tracefix/graph/`, `src/tracefix/retrieval/`). **This conflict is a Checkpoint 0
   decision — see §6.**
 
-The PDF is not in the repository. Decision required: commit a copy under
-`docs/project/` (438 KB binary) or keep it external and cite the path. Proposal:
-commit it, so that schema decisions can be traced to the originating spec.
+The PDF is committed at `docs/project/tracefix-proposed-project-report.pdf`
+(Checkpoint 0 decision D5). Authorship is the project team's own draft, so
+redistribution inside this repository is at the project's discretion; if any
+third-party material is later identified inside it, remove or replace it.
 
 ---
 
@@ -260,41 +261,59 @@ behind an `integration` marker and a documented startup command.
 
 ---
 
-## 6. Proposed shared contracts (Checkpoint 0 deliverable — for approval, not implemented)
+## 6. Shared contracts (revised after Checkpoint 0, decision D1)
 
-These are interfaces Workstream A proposes and will implement only after approval.
-They are deliberately minimal.
+Approved in principle with amendments; the machine-readable files live in
+`contracts/` and are locked by `tests/contract/`. C1 and C2 are
+`approved-in-principle`. C3 and C4 are drafts blocked on Workstream B review;
+their open questions are recorded inside the contract files (Q-B1–Q-B12).
 
-**C1 — `contracts/graph_schema.json`**
-Node labels: `Repository`, `File`, `Module`, `Class`, `Function`, `Test`, `Commit`,
-`Person`, `Ticket`, `Incident`, `Fix`. Edge types (Workstream A scope):
-`CONTAINS`, `IMPORTS`, `CALLS`, `COVERED_BY`, `MODIFIED_IN`, `AUTHORED_BY`,
-`OWNED_BY`, `AFFECTS`, `RESOLVED_BY`. Every node: `id`, `repo`, `revision`
-(git SHA), `content_hash?`; every edge: `provenance` ∈ {`observed`, `inferred`} +
-`source` (e.g. `python-ast`, `git-log`, `test-name-heuristic`).
-**Open questions:** (a) adopt full 7-layer model from spec §5 now, or start with
-Code+History and add layers as contracts C2/C3 need them? (b) `Service` node — yes/no
-for a single-repo target? (c) node id scheme (content hash vs path+qualified name).
+**C1 — `contracts/graph_schema.json` (v0.2.0, approved-in-principle)**
+Active layers: Code + History only — nodes `Repository`, `File`, `Module`,
+`Class`, `Function`, `Test`, `Commit`, `Person`; edges `CONTAINS`, `IMPORTS`,
+`CALLS`, `COVERED_BY`, `MODIFIED_IN`, `AUTHORED_BY`, `OWNED_BY`. Deferred:
+Knowledge, Decision, Incident, Procedural, Agent-state layers and
+`AFFECTS`/`RESOLVED_BY` (incident-memory lifecycle is Workstream B's; add via the
+contract-change procedure). Amendments per D1: stable canonical `entity_id`
+(`<repo_url>#<kind>:<qualified_key>`), revision-independent; `revision` and
+`content_hash` are node properties only; every edge declares `provenance`
+∈ {observed, inferred} plus `source`, with `confidence` required on inferred
+edges. Unresolvable imports become a File `imports_declared` property, never a
+fabricated edge. Formerly open questions are resolved: start with Code+History;
+`Service` node deferred until a multi-service target repo exists.
 
-**C2 — `contracts/retrieval.json`**
-`RetrievalStrategy` protocol: `name`, `retrieve(query, k, limits) -> list[RankedItem]`;
-`RankedItem = {evidence_id, strategy, rank, score, target:{file, symbol?, lines?},
-revision, source}`. Strategy implementations must be selectable by name in config;
-no strategy may reach into another's internals.
+**C2 — `contracts/retrieval.json` (v0.2.0, approved-in-principle)**
+`RetrievalStrategy.retrieve(query) -> RetrievalResult`. Amendments per D1: every
+`RankedItem` carries `provenance`, `source_revision`, and `source`; results carry
+explicit failure/partial semantics — `complete`, `partial_reason`
+(`limit_reached | timeout | index_incomplete | graph_unavailable |
+strategy_error_recovered`) and a typed `failure` object; a strategy raises
+`RetrievalError` only when it can return zero usable items. Query bounds: `k`,
+`limits.max_items`, `limits.max_hops`, `limits.timeout_ms`. Determinism required
+except dense strategies, which must record model and seed.
 
-**C3 — `contracts/context_manifest.json`**
-`ContextManifest = {run_id, case_id, repo, revision, budget:{token_limit,
-tokenizer, estimated:bool}, strategy_config, items:[EvidenceItem], totals:{tokens,
-item_count, duplicates}, created_at}`; `EvidenceItem` per brief §6 Phase 5 fields,
-including `evidence_id` (stable within run), `selection_reason`,
-`graph_path?`, `provenance` ∈ {observed, inferred}. Consumed by the repair
-workstream — **repair owner must sign off on field set before Phase 5 builds it.**
+**C3 — `contracts/context_manifest.json` (v0.1.0-draft — blocked on Workstream B)**
+Proposed fields: run/case/repo/revision; `budget {token_limit, tokenizer,
+estimated}`; `strategy_config`; `items[]` with evidence_id, type,
+path/symbol/lines, strategy/rank/score, graph_path/expansion_explanation,
+selection_reason, token_contribution, provenance, source; `totals {tokens,
+item_count, duplicates}`. Token accounting is a configurable tokenizer interface
+per D4: every figure is either named-tokenizer-measured or labeled
+`estimated: true`. **Blocked on B:** Q-B1 budget ownership, Q-B2 budget scope
+(evidence-only vs including repair scaffolding), Q-B3 tokenizer/model
+compatibility, Q-B4 evidence_id cross-run stability (certificate/ablation
+reuse), Q-B5 transport, Q-B6 raw content by hash vs inlined.
 
-**C4 — `contracts/evaluation.json`**
-Case record: `{case_id, repo, revision, bug_report, ground_truth_files[],
-ground_truth_functions[], localizable:bool, excluded_reason?}`; metric definitions
-with explicit denominators (Hit@k / Recall@k over *localizable* cases only;
-unlocalizable cases counted and reported separately, never silently dropped).
+**C4 — `contracts/evaluation.json` (v0.1.0-draft — blocked on Workstream B)**
+Case record: case_id, repo, revision, bug_report, ground_truth_files/functions,
+localizable + excluded_reason, dataset_source/instance_id, fix_commit,
+fail_to_pass_tests. Metrics with declared denominators: Hit@k/Recall@k over
+localizable cases only; unlocalizable cases tallied with reasons, never dropped
+silently; arms comparable only on identical case-set fingerprints (sha256 over
+sorted (case_id, revision) pairs + contract version). **Blocked on B:** Q-B7
+ground-truth derivation, Q-B8 primary k values, Q-B9 file-level metrics, Q-B10
+fingerprint method, Q-B11 multi-function any-hit vs all-hit, Q-B12 initial
+dataset choice.
 
 ---
 
@@ -350,15 +369,51 @@ Testing matrix to be maintained (brief §7):
 
 ---
 
-## 9. Decisions required before Phase 1 (Checkpoint 0 checklist)
+## 9. Checkpoint 0 checklist — resolution status
 
-1. Approve or amend contracts C1–C4 (§6), including the C1 open questions.
-2. Approve the `src/tracefix/` layout vs spec §13 flat layout (§3).
-3. Confirm target language = Python, target repositories for ingestion and evaluation
-   (evaluation dataset itself is external, but ingestion needs *a* repo).
-4. Rule on tokenizer (§4.3) and on committing the spec PDF (§1.4).
-5. Confirm test tooling: pytest + ruff + mypy in a project `.venv`, markers
-   `unit|contract|integration` with integration opt-in.
-6. Confirm Docker daemon will be available for FalkorDB, or approve proceeding with
-   mocked/in-memory graph tests until it is (delays Phase 2 acceptance only).
-7. Confirm branch/merge model `suhaas` → `main` as recorded in §8.
+1. Contracts C1–C4: **resolved in principle** (D1). C1/C2 revised and committed;
+   C3/C4 drafts committed, blocked on Workstream B (Q-B1–Q-B12).
+2. Package layout: **approved** (D2) — `src/tracefix/`.
+3. Target repositories: **candidates proposed** (§10); selection pending (D3).
+4. Tokenizer: **approved with condition** (D4) — configurable interface committed
+   in C3; tiktoken `cl100k_base` only if compatible with the selected model.
+5. Spec PDF: **approved and committed** (D5) — `docs/project/`.
+6. Tooling: **approved and set up** (D6) — project `.venv`; integration tests
+   marker-gated; no real-integration claims while Docker is unavailable.
+7. Branch model: **in use** — `suhaas` → `main` (§8).
+8. DBSF: **deferred** (D7) — RRF first; DBSF only with a cited authoritative
+   definition.
+9. Evaluation dataset and metric rules: **pending** (D8) — proposal in §10, to be
+   finalized with Workstream B.
+
+## 10. Target repository candidates (D3) and evaluation-dataset proposal (D8)
+
+Repository facts verified via `gh api repos/<repo>` on 2026-10-16. SWE-bench
+instance counts are the paper's post-validation counts (arXiv:2310.06770).
+
+| Candidate | Repo size | Code lines (SWE-bench paper) | License | SWE-bench instances | Notes |
+|---|---|---|---|---|---|
+| `psf/requests` — recommended | 13.6 MB | ~30k | Apache-2.0 | 44 | Smallest graph; active (last push 2026-09-28); pytest suite; permissive license; edge spot-checks feasible by hand |
+| `pylint-dev/pylint` | 42.2 MB | ~109k | GPL-2.0 | 57 | Rich internal call structure (exercises CALLS/IMPORTS); GPL is acceptable for evaluation-only use |
+| `pytest-dev/pytest` | 42.1 MB | ~111k | MIT | 119 | Highest instance count of the small/medium set; heavier sandbox story for Workstream B |
+
+`pallets/flask` (12.2 MB, BSD-3-Clause) was considered and rejected: only 11
+validated instances, too few for a 30–60 bug stream.
+
+**D3 proposal:** ingest `psf/requests` first as the Phase 1 target (fast, full
+history since 2011, small enough to audit extracted edges manually). Evaluation
+pool: its 44 SWE-bench instances, extendable with `pylint`'s 57 if a larger case
+set is wanted.
+
+**D8 proposal (for joint decision with Workstream B):** case set = SWE-bench
+instances for the selected repository at their recorded base commits; ground
+truth = functions enclosing gold-patch hunks (pending Q-B7); report Hit@k at
+k ∈ {5, 10, 20} (pending Q-B8). Contamination policy: SWE-bench issues/PRs are
+mostly ≤2023, i.e. pre-cutoff for current models; per spec §16 every reported
+result must state how many cases are pre-cutoff. Alternative if post-cutoff bugs
+are required: BugsInPy (493 real bugs across 17 Python projects, ACM FSE 2020;
+each bug ships buggy + fixed commits and an exposing test; a 2024 reproduction
+study revalidated 67% unmodified and >95% after environment fixes; projects
+include `black`, `httpie`, `tornado`, `scrapy`, `fastapi`). Workstream B should
+choose between the larger, well-trodden SWE-bench set with contamination
+disclosure and a smaller BugsInPy set with per-bug environments.
