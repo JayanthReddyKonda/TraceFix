@@ -1,0 +1,73 @@
+{
+  "contract": "tracefix.context_manifest",
+  "version": "0.1.0-draft",
+  "status": "draft-pending-workstream-b-review",
+  "checkpoint": "0-D1",
+  "note": "DRAFT. Fields and token-budget semantics must be coordinated with Workstream B (repair/sandbox/certificate owner) before any implementation. Implementation of src/tracefix/retrieval/manifest.py is blocked until this contract is finalized.",
+  "context_manifest": {
+    "run_id": "string; identifies the evaluation run",
+    "case_id": "string",
+    "repo": "normalized repository URL",
+    "revision": "full git SHA of the snapshot the context was retrieved from",
+    "budget": {
+      "token_limit": "int > 0",
+      "tokenizer": "TokenizerConfig (see token_accounting)",
+      "estimated": "bool"
+    },
+    "strategy_config": "serializable; every strategy that contributed items and its configuration",
+    "items": ["EvidenceItem"],
+    "totals": {
+      "tokens": "int; sum of item token contributions as computed by the configured tokenizer",
+      "item_count": "int",
+      "duplicates": "int; items referring to the same evidence target that were merged or dropped"
+    },
+    "created_at": "ISO-8601 UTC"
+  },
+  "evidence_item": {
+    "evidence_id": "string; stable within the run; must equal the evidence_id from the ranked item that produced it",
+    "evidence_type": "e.g. function_body, file_header, signature, commit, test, graph_path",
+    "repo": "normalized repository URL",
+    "revision": "full git SHA",
+    "file_path": "posix path",
+    "symbol": "optional qualified name",
+    "lines": "optional [start_line, end_line]",
+    "strategy": "string; retrieval strategy that produced it",
+    "rank": "int from the producing strategy",
+    "score": "float from the producing strategy",
+    "graph_path": "optional; node/edge sequence explaining graph expansion",
+    "expansion_explanation": "optional; human-readable reason the graph expansion reached this item",
+    "selection_reason": "why the context selector kept it (e.g. top-ranked, budget-filler, diversity-spread)",
+    "token_contribution": "int; tokens this item added to the package",
+    "provenance": "observed | inferred",
+    "source": "retrieval source (e.g. bm25, graph_callers)"
+  },
+  "token_accounting": {
+    "interface": "configurable tokenizer (Checkpoint 0 D4: approved with condition)",
+    "config": {
+      "name": "string; e.g. tiktoken",
+      "encoding": "e.g. cl100k_base when tiktoken is used; null for heuristic estimators",
+      "method": "tiktoken | char_div_4 | other (must name the actual implementation)",
+      "estimated": "bool"
+    },
+    "rule": "Every token figure is either measured with a named tokenizer or labeled estimated:true with its method. Bare unlabeled token numbers are contract violations. tiktoken may be used only if compatible with the selected model; the encoding must be recorded."
+  },
+  "bound_rules": [
+    "totals.tokens <= budget.token_limit",
+    "items[] is serializable JSON and round-trips without loss of contract fields",
+    "every item declares provenance and source",
+    "no item may reference a file path or line range that was not present at manifest.revision"
+  ],
+  "handoff": {
+    "consumer": "Workstream B repair workstream",
+    "transport": "open question Q-B5",
+    "raw_content_policy": "open question Q-B6 (raw output stored by hash per spec section 6)"
+  },
+  "open_questions_for_workstream_b": [
+    "Q-B1: Who sets budget.token_limit - the repair consumer or the retrieval producer? Does the manifest record a budget it was given, or choose one?",
+    "Q-B2: Budget scope - are token_limit and totals.tokens evidence-only, or do they include repair prompt scaffolding (system prompt, patch instructions, delimiters)?",
+    "Q-B3: Tokenizer compatibility - tiktoken encoding must be compatible with the selected repair model (D4 condition). Which model will Workstream B select, and is cl100k_base acceptable as the estimate encoding?",
+    "Q-B4: evidence_id stability - within-run only (Workstream A brief) or deterministic across runs? The certificate/ablation engine references context nodes across runs; if cross-run stability is required, the derivation rule must change here first.",
+    "Q-B5: Transport - serialized JSON file, API response, or graph nodes? Where does Workstream B expect to read the manifest from?",
+    "Q-B6: Raw content - should the manifest carry snippet text, or references plus content hashes so Workstream B re-expands raw output by hash (spec section 6)?"
+  ]
+}

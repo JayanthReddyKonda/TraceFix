@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Environments
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local state and secrets
+.env
+*.log
+artifacts/
+
+# Databases and model artifacts (never committed)
+*.db
+*.dump
+models/
+*.gguf
+*.bin
+
+# OS
+.DS_Store

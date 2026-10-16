@@ -1,0 +1,184 @@
+{
+  "contract": "tracefix.graph_schema",
+  "version": "0.2.0",
+  "status": "approved-in-principle",
+  "checkpoint": "0-D1",
+  "amendments_recorded": [
+    "Start with Code + History layers only (Knowledge/Decision/Incident/Procedural/Agent-state deferred).",
+    "Stable canonical entity IDs; revision and content hashes are separate properties, never part of identity.",
+    "Inferred relationships are explicitly marked (provenance + source + confidence)."
+  ],
+  "scope": {
+    "layers_active": ["code", "history"],
+    "layers_deferred": ["knowledge", "decision", "incident", "procedural", "agent_state"],
+    "deferred_note": "Ticket/Incident/Fix nodes and AFFECTS/RESOLVED_BY edges belong to the incident-memory lifecycle (Workstream B ownership). Adding them requires the shared-contract change procedure."
+  },
+  "identity": {
+    "entity_id": "canonical, revision-independent identifier",
+    "scheme": "<normalized_repo_url>#<kind>:<qualified_key>",
+    "qualified_key": {
+      "Repository": "normalized_repo_url",
+      "File": "posix_path",
+      "Module": "dotted_module_path",
+      "Class": "dotted_module_path.ClassName",
+      "Function": "dotted_module_path.enclosing_qualname",
+      "Test": "dotted_module_path.test_qualname",
+      "Commit": "full_git_sha",
+      "Person": "normalized_email_or_login"
+    },
+    "revision_property": "revision",
+    "content_hash_property": "content_hash",
+    "rule": "revision and content_hash are node properties only. Re-ingesting a new revision must not mint a new entity_id for an unchanged logical entity."
+  },
+  "node_types": {
+    "Repository": {
+      "layer": "code",
+      "key_properties": ["repo"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "url"]
+    },
+    "File": {
+      "layer": "code",
+      "key_properties": ["path"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "path"],
+      "optional_properties": ["content_hash", "imports_declared", "language"]
+    },
+    "Module": {
+      "layer": "code",
+      "key_properties": ["qualified_name"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "qualified_name", "path"],
+      "optional_properties": ["content_hash", "is_package"]
+    },
+    "Class": {
+      "layer": "code",
+      "key_properties": ["qualified_name"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "qualified_name", "path", "start_line", "end_line"],
+      "optional_properties": ["content_hash", "base_classes_declared"]
+    },
+    "Function": {
+      "layer": "code",
+      "key_properties": ["qualified_name"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "qualified_name", "path", "start_line", "end_line"],
+      "optional_properties": ["content_hash", "is_method", "is_coroutine", "decorators_declared", "signature"]
+    },
+    "Test": {
+      "layer": "code",
+      "key_properties": ["qualified_name"],
+      "required_properties": ["entity_id", "kind", "repo", "revision", "qualified_name", "path", "start_line", "end_line"],
+      "optional_properties": ["content_hash", "fixture_names_declared"],
+      "note": "A Test is a Function subclass by detection convention; it is a distinct kind for query filtering."
+    },
+    "Commit": {
+      "layer": "history",
+      "key_properties": ["sha"],
+      "required_properties": ["entity_id", "kind", "repo", "sha", "author_person", "committed_at"],
+      "optional_properties": ["message", "parent_shas"]
+    },
+    "Person": {
+      "layer": "history",
+      "key_properties": ["identity"],
+      "required_properties": ["entity_id", "kind", "identity"],
+      "optional_properties": ["name", "login"]
+    }
+  },
+  "edge_types": {
+    "CONTAINS": {
+      "from": [["File", "Module", "Class", "Test"], ["Module", "Class"], ["Class"]],
+      "to": [["Module", "Class", "Function", "Test"], ["Class", "Function"], ["Class", "Function"]],
+      "provenance_policy": {"default": "observed", "sources": ["python-ast"]},
+      "note": "to is positional with from: File->(Module|Class|Function|Test), Module->(Class|Function), Class->(Class|Function)."
+    },
+    "IMPORTS": {
+      "from": ["Module"],
+      "to": ["Module"],
+      "provenance_policy": {"default": "observed", "sources": ["python-ast", "import-resolution"]},
+      "note": "Only in-repo resolvable imports become edges. External or unresolvable imports are recorded solely in the importing File's imports_declared property; no edge is fabricated for them."
+    },
+    "CALLS": {
+      "from": ["Function"],
+      "to": ["Function"],
+      "provenance_policy": {
+        "default": "observed",
+        "observed_when": "call target uniquely resolves within the repository via same-module scope or resolved imports",
+        "inferred_when": "target resolved by name-only heuristic (multiple candidates or dynamic attribute call)",
+        "sources": ["python-ast", "name-resolution", "name-heuristic"]
+      },
+      "confidence_property": "required; 'resolved' for observed, 'heuristic' for inferred"
+    },
+    "COVERED_BY": {
+      "from": ["Function"],
+      "to": ["Test"],
+      "provenance_policy": {
+        "default": "inferred",
+        "observed_when": "produced from an actual coverage run artifact (source coverage-run)",
+        "inferred_when": "produced by test-name/fixture conventions (source test-name-convention)",
+        "sources": ["coverage-run", "test-name-convention"]
+      }
+    },
+    "MODIFIED_IN": {
+      "from": ["File", "Function"],
+      "to": ["Commit"],
+      "provenance_policy": {
+        "default": "observed",
+        "observed_when": "git log / diff hunk intersects the entity span at the pre-image revision (Function) or touches the path (File)",
+        "sources": ["git-log", "git-diff"]
+      },
+      "optional_properties": ["pre_start_line", "pre_end_line"]
+    },
+    "AUTHORED_BY": {
+      "from": ["Commit"],
+      "to": ["Person"],
+      "provenance_policy": {"default": "observed", "sources": ["git-log"]}
+    },
+    "OWNED_BY": {
+      "from": ["File"],
+      "to": ["Person"],
+      "provenance_policy": {
+        "default": "inferred",
+        "observed_when": "CODEOWNERS (or equivalent) matches the path (source codeowners)",
+        "inferred_when": "derived from historical authorship share (source git-history-ownership-heuristic)",
+        "sources": ["codeowners", "git-history-ownership-heuristic"]
+      },
+      "optional_properties": ["weight"]
+    }
+  },
+  "provenance": {
+    "values": ["observed", "inferred"],
+    "definitions": {
+      "observed": "relationship read directly from an authoritative artifact: source AST structure, git object, CODEOWNERS entry, or coverage run output.",
+      "inferred": "relationship produced by a heuristic: name-based call resolution, test-name convention, or authorship-share ownership. Must carry source and confidence."
+    },
+    "rule": "Every edge MUST declare provenance and source. Inferred edges MUST declare confidence. Retrieval and manifests must never present inferred edges as observed."
+  },
+  "common_node_properties": {
+    "entity_id": "string (see identity.scheme)",
+    "kind": "node type name",
+    "repo": "normalized repository URL (tenancy scoping)",
+    "revision": "full git SHA of the snapshot this node was extracted from",
+    "content_hash": "optional; hash of the exact source text for code nodes",
+    "ingested_at": "ISO-8601 UTC timestamp of ingestion"
+  },
+  "common_edge_properties": {
+    "provenance": "observed | inferred",
+    "source": "string artifact/source name",
+    "revision": "full git SHA of the snapshot",
+    "confidence": "required for inferred edges",
+    "commit_sha": "optional; the commit that introduced the relationship for code-derived edges",
+    "valid_from": "optional ISO-8601; defaults to commit time of commit_sha",
+    "valid_to": "optional ISO-8601; null while valid; set (not deleted) when invalidated by a later revision"
+  },
+  "temporal": {
+    "invalidation": "When a file changes at a new revision, affected nodes/edges are re-ingested and superseded edges receive valid_to instead of being deleted, preserving replay of history."
+  },
+  "tenancy": {
+    "model": "one FalkorDB graph per tenant or team",
+    "property": "repo on every node",
+    "rule": "graph selection happens at the client level; the query layer must refuse cross-graph queries."
+  },
+  "constraints": [
+    "entity_id is unique per graph.",
+    "Edges connect only kinds permitted by the edge definition.",
+    "No edges reference node types from deferred layers.",
+    "revision values are full 40-character git SHAs.",
+    "The schema does not claim complete call/dependency/test coverage; parser limitations are documented in docs/graph/."
+  ]
+}

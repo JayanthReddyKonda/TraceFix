@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tracefix"
+version = "0.0.1"
+description = "TraceFix - graph-native bug-resolution agent. Workstream A: repository intelligence, FalkorDB graph, retrieval, and context packages."
+readme = "README.md"
+requires-python = ">=3.11"
+# Runtime dependencies are intentionally empty at Checkpoint 0.
+# Proposed additions and their justification: docs/workstreams/graph-retrieval-audit.md section 4.
+# Nothing is installed into this list until the integration owner approves it.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "ruff>=0.17",
+    "mypy>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--strict-markers -m 'not integration and not slow'"
+markers = [
+    "contract: validates serialized objects and contract files against contracts/",
+    "integration: requires a running service (FalkorDB/Docker); excluded from the default run",
+    "slow: long-running; excluded from the default run",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+strict = true
+warn_unused_configs = true

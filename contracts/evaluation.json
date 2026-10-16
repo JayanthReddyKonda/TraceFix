@@ -1,0 +1,58 @@
+{
+  "contract": "tracefix.evaluation",
+  "version": "0.1.0-draft",
+  "status": "draft-pending-workstream-b-review",
+  "checkpoint": "0-D1",
+  "note": "DRAFT. Case schema, ground-truth policy, exclusions, and metric denominators must be coordinated with Workstream B before finalization (Checkpoint 0 D8). No evaluation run may claim finality against this draft.",
+  "case_record": {
+    "case_id": "string; unique within the case set",
+    "repo": "normalized repository URL",
+    "revision": "full git SHA the case is evaluated at (buggy snapshot)",
+    "bug_report": "string; the ticket/issue text used as the query",
+    "ground_truth_files": ["posix paths changed by the human fix"],
+    "ground_truth_functions": ["qualified names of functions changed by the human fix"],
+    "localizable": "bool; false when the fix cannot be attributed to functions/files (e.g. pure config, generated code)",
+    "excluded_reason": "required when localizable is false",
+    "dataset_source": "e.g. swe-bench | bugsinpy | seeded",
+    "dataset_instance_id": "string; upstream id, if any",
+    "fix_commit": "full git SHA of the human fix",
+    "fail_to_pass_tests": ["optional; tests that indicate the fix"]
+  },
+  "metric_definitions": {
+    "hit_at_k": {
+      "definition": "1 if any ground-truth function appears in the retrieved/selected set at rank <= k, else 0",
+      "denominator": "localizable cases in the frozen case set with non-empty ground_truth_functions",
+      "unlocalizable_cases": "excluded from the denominator; counted and reported in excluded_tally with reasons",
+      "multi_function_fixes": "any-hit (open question Q-B11)"
+    },
+    "recall_at_k": {
+      "definition": "fraction of ground-truth functions present in the set at rank <= k",
+      "denominator": "sum over localizable cases of len(ground_truth_functions)"
+    },
+    "first_fix_function_rank": {
+      "definition": "rank of the earliest retrieved ground-truth function; recorded as censored when absent",
+      "denominator": "localizable cases"
+    },
+    "context_token_count": {"definition": "totals.tokens of the context manifest", "tokenizer": "per contracts/context_manifest.json token_accounting"},
+    "retrieval_latency_ms": {"definition": "measured wall-clock per case per strategy"},
+    "item_counts": {"definition": "retrieved and selected counts per case"},
+    "duplicate_items": {"definition": "count of items sharing an evidence target"},
+    "source_coverage": {"definition": "distinct files/symbols represented among selected items"}
+  },
+  "comparability_rule": "Two arms are comparable only when evaluated on the same case-set fingerprint. Results from different case sets must never be presented as directly equivalent.",
+  "case_set_fingerprint": "sha256 over the sorted list of (case_id, revision) pairs plus the evaluation contract version",
+  "reporting_rules": [
+    "Report the denominator next to every rate.",
+    "Report excluded cases and reasons; never silently drop them.",
+    "Record strategy config, contract versions, source revisions, and the exact commands with every result.",
+    "Describe results on small samples as a controlled study, not a benchmark claim (spec section 11)."
+  ],
+  "open_questions_for_workstream_b": [
+    "Q-B7: Ground-truth derivation - are ground_truth_functions the enclosing functions of gold-patch hunks? How are qualified names normalized across renames/moves?",
+    "Q-B8: Which k values are primary (e.g. 5/10/20), and which are secondary?",
+    "Q-B9: Are file-level Hit@k/Recall@k required in the first evaluation, or function-level only?",
+    "Q-B10: Case-set fingerprint method - is the sha256 scheme above acceptable?",
+    "Q-B11: Multi-function fixes - any-hit or all-hit for Hit@k?",
+    "Q-B12: Initial dataset (D8) - Workstream A proposes a SWE-bench-derived case set on one repository (see docs/workstreams/graph-retrieval-audit.md section 10). Confirm or choose an alternative, including the contamination-reporting policy for pre-cutoff bugs."
+  ]
+}

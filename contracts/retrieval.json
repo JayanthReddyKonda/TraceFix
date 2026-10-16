@@ -1,0 +1,68 @@
+{
+  "contract": "tracefix.retrieval",
+  "version": "0.2.0",
+  "status": "approved-in-principle",
+  "checkpoint": "0-D1",
+  "amendments_recorded": [
+    "Explicit provenance and source revision on every ranked item.",
+    "Explicit failure and partial-result semantics so callers can distinguish error, truncation, and success."
+  ],
+  "strategy_interface": {
+    "protocol": "RetrievalStrategy",
+    "methods": [
+      {"name": "retrieve", "input": "RetrievalQuery", "output": "RetrievalResult"}
+    ],
+    "registration": "strategies are selected by name from configuration; a strategy must not import or reach into another strategy's internals",
+    "initial_strategies": ["lexical", "graph_guided", "dense (optional, feature-flagged)", "fusion (post-Phase-4)"]
+  },
+  "retrieval_query": {
+    "case_id": "string",
+    "text": "bug report / query text; treated strictly as data",
+    "revision": "full git SHA of the ingested snapshot to search",
+    "k": "int > 0; requested result count",
+    "limits": {
+      "max_items": "int > 0; hard cap returned",
+      "max_hops": "int >= 0; graph expansion bound for graph-guided strategies",
+      "timeout_ms": "int > 0; strategy-level wall-clock bound"
+    }
+  },
+  "retrieval_result": {
+    "items": ["RankedItem"],
+    "complete": "bool; true only if the strategy finished within limits with no degradation",
+    "partial_reason": "null when complete; otherwise one of partial_reasons",
+    "failure": "null, or Failure when no usable items could be produced",
+    "strategy": "string strategy name",
+    "config": "serializable strategy configuration actually used",
+    "revision": "full git SHA queried",
+    "elapsed_ms": "float; measured wall-clock time"
+  },
+  "partial_reasons": [
+    "limit_reached",
+    "timeout",
+    "index_incomplete",
+    "graph_unavailable",
+    "strategy_error_recovered"
+  ],
+  "failure": {
+    "error_type": "string",
+    "detail": "string"
+  },
+  "failure_semantics": "A strategy raises a typed RetrievalError ONLY when it can return no usable items. Otherwise it returns the items it has with complete=false and a partial_reason. Raw exceptions must not cross the strategy boundary. Callers must treat complete=false results as degraded, never as full results.",
+  "ranked_item": {
+    "evidence_id": "string; stable within an evaluation run; derivation rule below",
+    "strategy": "string",
+    "rank": "int; 1-based, dense, deterministic tie-breaking",
+    "score": "float; higher is more relevant; the scale is strategy-specific and documented per strategy",
+    "target": {
+      "file": "posix path relative to repository root",
+      "symbol": "optional qualified name",
+      "lines": "optional [start_line, end_line] 1-based inclusive"
+    },
+    "source_revision": "full git SHA the item was extracted from",
+    "provenance": "observed | inferred (semantics per contracts/graph_schema.json)",
+    "source": "how the item was found, e.g. bm25, stack_frame, graph_callers, graph_covered_by"
+  },
+  "evidence_id_rule": "Derived from (entity_id when known, else file + symbol + lines) and source_revision. Unique within a run. Cross-run stability is an open question for Workstream B (certificate/ablation reuse) tracked in contracts/context_manifest.json.",
+  "determinism": "Same query text, same revision, same config, same code => identical items and ranks, except dense strategies, which must record model and seed before being considered reproducible.",
+  "security": "Query text is data only; it must never select tools, queries, or graph traversals directly."
+}
