@@ -19,6 +19,9 @@ venv/
 *.log
 artifacts/
 
+# Cloned target repositories (large; re-clone from origin, see audit section 10)
+data/
+
 # Databases and model artifacts (never committed)
 *.db
 *.dump
