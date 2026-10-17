@@ -5,8 +5,9 @@ Maintained per brief §11 and §17: updated at the start and end of every sessio
 
 - **Owner:** Workstream B (repair engine, sandboxed verification, incident memory & evaluation)
 - **Primary Branch:** `feature/repair-evaluation` — integration target: `integration` / `main`
-- **Latest Checkpoint Decision:** Checkpoint 0 audit submitted (2026-10-17). Status: `BLOCKED — NEEDS DECISION` pending shared contracts agreement.
-- **Rule:** Stop after Phase 0. Do not implement dependent code until Checkpoint 0 is explicitly approved.
+- **Latest Checkpoint Decision:** Checkpoint 0 APPROVED by user/integration owner (2026-10-17). Status: `READY FOR INDEPENDENT CONTINUATION`.
+- **Decisions Approved:** D-B1 (Contracts C5, C6, C7 approved), D-B2 (Answers to Q-B1 through Q-B12 approved), D-B3 (Multi-tier sandbox approved), D-B4 (Anchor cases approved: `psf__requests-1142`, `1327`, `1339`), D-B5 (Strict patch safety bounds approved), D-B6 (Chronological replay & leakage prevention approved).
+- **Rule:** Stop after every phase. Execute rigorous module-wise testing and quality gates.
 
 Statuses used: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `READY FOR REVIEW`, `DONE`.
 
@@ -34,7 +35,7 @@ Statuses used: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `READY FOR REVIEW`, `DON
 | B0.5 | Propose contract C6 (`verification.json`) | Sandbox execution request/result, error classification, limits | B0.2 | Machine-readable JSON contract with verification status taxonomy | WSB | DONE | Contract JSON draft created; validated by contract tests | `contracts/verification.json` | Await Checkpoint 0 approval |
 | B0.6 | Propose contract C7 (`incident_memory.json`) | Incident lifecycle, eligibility gate, provenance, query rules | B0.3 | Machine-readable JSON contract with 4 strict eligibility rules | WSB | DONE | Contract JSON draft created; validated by contract tests | `contracts/incident_memory.json` | Await Checkpoint 0 approval |
 | B0.7 | Task ledger & implementation plan | Phase-by-phase plan with owners, criteria, risks, and tests | B0.1–B0.6 | Structured task ledger committed in repository | WSB | DONE | This document | `docs/workstreams/repair-evaluation-plan.md` | Update at every phase boundary |
-| B0.8 | Checkpoint 0 agreement & review | Review with integration owner and Workstream A | B0.1–B0.7 | Explicit approval of contracts C5–C7, Q-B1–Q-B12 answers, and sandbox plan | WSB | BLOCKED | Awaiting user / integration owner approval | — | Unblocks Phase 1 |
+| B0.8 | Checkpoint 0 agreement & review | Review with integration owner and Workstream A | B0.1–B0.7 | Explicit approval of contracts C5–C7, Q-B1–Q-B12 answers, and sandbox plan | WSB | DONE | User approval received 2026-10-17; decisions D-B1 to D-B6 recorded | `docs/workstreams/repair-evaluation-plan.md` | Proceed to Phase 1 |
 
 ---
 
@@ -42,11 +43,11 @@ Statuses used: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `READY FOR REVIEW`, `DON
 
 | ID | Task | Description / Rationale | Dependencies | Acceptance Criteria | Owner | Status | Tests & Evidence | Files Changed |
 |---|---|---|---|---|---|---|---|---|
-| B1.1 | State machine contracts & models | Typed Pydantic models for repair states, events, transition validation | B0.8 | Valid transitions succeed; invalid transitions raise `InvalidStateTransitionError` | WSB | NOT STARTED | Unit tests: all valid state pairs, invalid jumps, terminal state immutability | `src/tracefix/repair/interfaces.py`, `state_machine.py` |
-| B1.2 | Repair state machine implementation | Implement deterministic state machine with explicit retry reasons and timeout handling | B1.1 | Terminal states (`VERIFIED`, `FAILED`, `REJECTED`) explicit; never silently transition to success | WSB | NOT STARTED | Unit tests: transitions, retry increments, retry exhaustion, cancellation | `src/tracefix/repair/state_machine.py` |
-| B1.3 | Orchestrator interface & pipeline skeleton | High-level orchestrator coordinating context retrieval, patch generation, and verification | B1.2 | Accepts `CaseRecord` + `ContextManifest`; returns structured `RepairResult` | WSB | NOT STARTED | Unit tests with mock components; contract serialization test | `src/tracefix/repair/interfaces.py`, `state_machine.py` |
-| B1.4 | Execution record persistence | Persist structured execution traces (`RepairAttemptRecord`) for auditability and replay | B1.3 | Every attempt records base revision, context manifest ID, patch hash, and result | WSB | NOT STARTED | Unit tests: trace serialization, missing fields rejection | `src/tracefix/repair/state_machine.py` |
-| B1.5 | Checkpoint 1 stop & verification | Stop at Phase 1 boundary; verify state machine unit tests | B1.1–B1.4 | 100% unit tests pass; ruff/mypy clean; Checkpoint 1 report submitted | WSB | NOT STARTED | Test execution output recorded | `docs/workstreams/repair-evaluation-plan.md` |
+| B1.1 | State machine contracts & models | Typed Pydantic models for repair states, events, transition validation | B0.8 | Valid transitions succeed; invalid transitions raise `InvalidStateTransitionError` | WSB | DONE | `test_valid_happy_path_transitions`, `test_illegal_state_jumps_rejected`, `test_terminal_states_are_immutable` pass | `src/tracefix/repair/interfaces.py`, `state_machine.py` |
+| B1.2 | Repair state machine implementation | Implement deterministic state machine with explicit retry reasons and timeout handling | B1.1 | Terminal states (`VERIFIED`, `FAILED`, `REJECTED`) explicit; never silently transition to success | WSB | DONE | `test_retry_mechanics`, `test_negative_max_retries_rejected` pass; 22 unit tests pass | `src/tracefix/repair/state_machine.py` |
+| B1.3 | Orchestrator interface & pipeline skeleton | High-level orchestrator coordinating context retrieval, patch generation, and verification | B1.2 | Accepts `CaseRecord` + `ContextManifest`; returns structured `RepairResult` | WSB | DONE | `test_orchestrator_successful_repair`, `test_orchestrator_safety_rejection` pass | `src/tracefix/repair/interfaces.py`, `state_machine.py` |
+| B1.4 | Execution record persistence | Persist structured execution traces (`RepairAttemptRecord`) for auditability and replay | B1.3 | Every attempt records base revision, context manifest ID, patch hash, and result | WSB | DONE | `RepairResult` model validated, `retry_history` audited, `duration_seconds` recorded | `src/tracefix/repair/state_machine.py` |
+| B1.5 | Checkpoint 1 stop & verification | Stop at Phase 1 boundary; verify state machine unit tests | B1.1–B1.4 | 100% unit tests pass; ruff/mypy clean; Checkpoint 1 report submitted | WSB | DONE | 252 tests passed in 17.42s; ruff and mypy clean (23 source files checked) | `docs/workstreams/repair-evaluation-plan.md` |
 
 ---
 

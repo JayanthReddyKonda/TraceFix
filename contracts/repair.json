@@ -26,6 +26,7 @@
       {"from": "VERIFICATION_RUNNING", "to": "PATCH_GENERATED", "condition": "retry_on_test_failure_when_attempts_remain"},
       {"from": "VERIFICATION_RUNNING", "to": "FAILED"},
       {"from": "PATCH_GENERATED", "to": "FAILED", "condition": "generation_fatal_or_timeout"},
+      {"from": "PATCH_GENERATED", "to": "REJECTED", "condition": "patch_safety_violation"},
       {"from": "PATCH_VALIDATED", "to": "REJECTED", "condition": "patch_safety_violation"},
       {"from": "PATCH_GENERATED", "to": "PATCH_GENERATED", "condition": "retry_on_transient_provider_error"}
     ],
