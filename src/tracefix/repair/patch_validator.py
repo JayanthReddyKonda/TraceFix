@@ -67,9 +67,7 @@ class PatchValidator:
         # Check against prohibited patterns
         posix_str = PurePosixPath(clean).as_posix()
         for pattern in self.prohibited_patterns:
-            if fnmatch.fnmatch(posix_str, pattern) or fnmatch.fnmatch(
-                path_obj.name, pattern
-            ):
+            if fnmatch.fnmatch(posix_str, pattern) or fnmatch.fnmatch(path_obj.name, pattern):
                 return False, f"Prohibited file modification: {clean} matches '{pattern}'"
 
         return True, None

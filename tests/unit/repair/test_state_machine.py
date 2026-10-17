@@ -59,9 +59,7 @@ class MockPatchValidator:
         self.results = list(results)
         self.calls: list[CandidatePatch] = []
 
-    def validate(
-        self, candidate_patch: CandidatePatch, base_revision: str
-    ) -> ValidationResult:
+    def validate(self, candidate_patch: CandidatePatch, base_revision: str) -> ValidationResult:
         self.calls.append(candidate_patch)
         if not self.results:
             return ValidationResult(is_valid=True)
@@ -83,12 +81,14 @@ class MockSandboxVerifier:
         test_suite: dict,
         timeout_seconds: int = 120,
     ) -> VerificationResultSummary:
-        self.calls.append({
-            "case_id": case_id,
-            "base_revision": base_revision,
-            "patch": patch,
-            "test_suite": test_suite,
-        })
+        self.calls.append(
+            {
+                "case_id": case_id,
+                "base_revision": base_revision,
+                "patch": patch,
+                "test_suite": test_suite,
+            }
+        )
         if not self.summaries:
             return VerificationResultSummary(status="VERIFIED", exit_code=0)
         return self.summaries.pop(0)
@@ -252,13 +252,15 @@ def test_orchestrator_successful_repair() -> None:
     )
     provider = MockModelProvider([diff_text])
     validator = MockPatchValidator([ValidationResult(is_valid=True)])
-    verifier = MockSandboxVerifier([
-        VerificationResultSummary(
-            status="VERIFIED",
-            exit_code=0,
-            passed_tests=["test_no_content_length"],
-        )
-    ])
+    verifier = MockSandboxVerifier(
+        [
+            VerificationResultSummary(
+                status="VERIFIED",
+                exit_code=0,
+                passed_tests=["test_no_content_length"],
+            )
+        ]
+    )
 
     orchestrator = RepairOrchestrator(provider, validator, verifier)
     request = RepairRequest(
@@ -287,13 +289,15 @@ def test_orchestrator_safety_rejection() -> None:
         "+root::0:0:::\n"
     )
     provider = MockModelProvider([diff_text])
-    validator = MockPatchValidator([
-        ValidationResult(
-            is_valid=False,
-            errors=["Path traversal detected: ../../etc/passwd"],
-            prohibited_files=["../../etc/passwd"],
-        )
-    ])
+    validator = MockPatchValidator(
+        [
+            ValidationResult(
+                is_valid=False,
+                errors=["Path traversal detected: ../../etc/passwd"],
+                prohibited_files=["../../etc/passwd"],
+            )
+        ]
+    )
     verifier = MockSandboxVerifier([])
 
     orchestrator = RepairOrchestrator(provider, validator, verifier)
@@ -326,14 +330,22 @@ def test_orchestrator_retries_and_succeeds() -> None:
         "-bad\n+perfect\n"
     )
     provider = MockModelProvider([diff1, diff2])
-    validator = MockPatchValidator([
-        ValidationResult(is_valid=True),
-        ValidationResult(is_valid=True),
-    ])
-    verifier = MockSandboxVerifier([
-        VerificationResultSummary(status="TEST_FAILED", exit_code=1, failed_tests=["test_feature"]),
-        VerificationResultSummary(status="VERIFIED", exit_code=0, passed_tests=["test_feature"]),
-    ])
+    validator = MockPatchValidator(
+        [
+            ValidationResult(is_valid=True),
+            ValidationResult(is_valid=True),
+        ]
+    )
+    verifier = MockSandboxVerifier(
+        [
+            VerificationResultSummary(
+                status="TEST_FAILED", exit_code=1, failed_tests=["test_feature"]
+            ),
+            VerificationResultSummary(
+                status="VERIFIED", exit_code=0, passed_tests=["test_feature"]
+            ),
+        ]
+    )
 
     orchestrator = RepairOrchestrator(provider, validator, verifier)
     request = RepairRequest(
@@ -353,16 +365,20 @@ def test_orchestrator_retries_and_succeeds() -> None:
 def test_orchestrator_exhausts_retries_and_fails() -> None:
     diff = "diff --git a/mod.py b/mod.py\n--- a/mod.py\n+++ b/mod.py\n@@ -1,1 +1,1 @@\n-a\n+b\n"
     provider = MockModelProvider([diff, diff, diff])
-    validator = MockPatchValidator([
-        ValidationResult(is_valid=True),
-        ValidationResult(is_valid=True),
-        ValidationResult(is_valid=True),
-    ])
-    verifier = MockSandboxVerifier([
-        VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
-        VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
-        VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
-    ])
+    validator = MockPatchValidator(
+        [
+            ValidationResult(is_valid=True),
+            ValidationResult(is_valid=True),
+            ValidationResult(is_valid=True),
+        ]
+    )
+    verifier = MockSandboxVerifier(
+        [
+            VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
+            VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
+            VerificationResultSummary(status="TEST_FAILED", failed_tests=["test_1"]),
+        ]
+    )
 
     orchestrator = RepairOrchestrator(provider, validator, verifier)
     request = RepairRequest(

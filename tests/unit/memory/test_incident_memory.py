@@ -84,9 +84,7 @@ def test_eligibility_rules() -> None:
         bug_report="bug",
         patch_diff="+fix",
         verification_evidence=_sample_verified_evidence(),
-        root_cause_explanation=RootCauseExplanation(
-            text="Model explanation", verified=True
-        ),
+        root_cause_explanation=RootCauseExplanation(text="Model explanation", verified=True),
     )
     status, reason = evaluator.evaluate(exp_rec)
     assert status == "INELIGIBLE"
@@ -156,9 +154,7 @@ def test_repository_save_and_chronological_query(tmp_path: Path) -> None:
 
     # Query as of 2026-02-01: should return rec1 only!
     # (rec2 is in the future; rec_fail is ineligible)
-    results = repo2.query_eligible(
-        query_text="adapter", as_of_time="2026-02-01T00:00:00Z"
-    )
+    results = repo2.query_eligible(query_text="adapter", as_of_time="2026-02-01T00:00:00Z")
     assert len(results) == 1
     assert results[0].case_id == "case1"
 

@@ -71,9 +71,7 @@ class CandidatePatch(BaseModel):
     lines_deleted: int = Field(default=0, ge=0)
     format: str = "unified_diff"
     source_model: str = "unknown"
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class ValidationResult(BaseModel):
@@ -103,9 +101,7 @@ class RetryEvent(BaseModel):
 
     attempt: int = Field(ge=1)
     reason: str = Field(min_length=1)
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class RepairRequest(BaseModel):
@@ -136,17 +132,11 @@ class RepairResult(BaseModel):
     @model_validator(mode="after")
     def _validate_terminal_state(self) -> RepairResult:
         if self.final_state not in TERMINAL_STATES:
-            raise ValueError(
-                f"final_state must be a terminal state, got {self.final_state}"
-            )
+            raise ValueError(f"final_state must be a terminal state, got {self.final_state}")
         if self.final_state in {"FAILED", "REJECTED"} and not self.failure_reason:
-            raise ValueError(
-                f"{self.final_state} result must carry an explicit failure_reason"
-            )
+            raise ValueError(f"{self.final_state} result must carry an explicit failure_reason")
         if self.final_state == "VERIFIED" and not self.candidate_patch:
-            raise ValueError(
-                "VERIFIED result must carry candidate_patch"
-            )
+            raise ValueError("VERIFIED result must carry candidate_patch")
         return self
 
 
@@ -161,9 +151,7 @@ class ModelProvider(Protocol):
 class PatchValidatorProtocol(Protocol):
     """Interface for patch validators."""
 
-    def validate(
-        self, candidate_patch: CandidatePatch, base_revision: str
-    ) -> ValidationResult:
+    def validate(self, candidate_patch: CandidatePatch, base_revision: str) -> ValidationResult:
         """Validate patch safety and syntax."""
         ...
 

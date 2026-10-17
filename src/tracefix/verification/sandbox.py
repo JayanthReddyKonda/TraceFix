@@ -63,9 +63,7 @@ class WorktreeSandbox:
     """
 
     def __init__(self, repo_dir: str | Path | None = None) -> None:
-        self.repo_dir = (
-            Path(repo_dir).resolve() if repo_dir else Path.cwd().resolve()
-        )
+        self.repo_dir = Path(repo_dir).resolve() if repo_dir else Path.cwd().resolve()
         self.temp_dir: Path | None = None
         self.runner = SubprocessTestRunner()
         self.parser = TestResultParser()
@@ -153,9 +151,7 @@ class WorktreeSandbox:
                 timed_out=True,
             )
 
-        parsed = self.parser.parse_pytest(
-            exec_res.stdout, exec_res.stderr, exec_res.exit_code
-        )
+        parsed = self.parser.parse_pytest(exec_res.stdout, exec_res.stderr, exec_res.exit_code)
 
         if parsed.is_setup_failure:
             return VerificationResultSummary(
@@ -170,9 +166,7 @@ class WorktreeSandbox:
         # 1. Exit code must be 0
         # 2. No test failures or collection errors
         is_verified = (
-            exec_res.exit_code == 0
-            and parsed.failed_count == 0
-            and parsed.error_count == 0
+            exec_res.exit_code == 0 and parsed.failed_count == 0 and parsed.error_count == 0
         )
 
         status = "VERIFIED" if is_verified else "TEST_FAILED"
@@ -313,9 +307,7 @@ class SandboxVerifierAdapter:
                     stderr_tail=str(err),
                 )
 
-            return self.sandbox.run_tests(
-                test_suite=test_suite, timeout_seconds=timeout_seconds
-            )
+            return self.sandbox.run_tests(test_suite=test_suite, timeout_seconds=timeout_seconds)
         except SandboxError as err:
             return VerificationResultSummary(
                 status="ENVIRONMENT_ERROR",

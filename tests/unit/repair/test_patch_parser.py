@@ -81,13 +81,7 @@ def test_empty_diff_raises_error() -> None:
 
 
 def test_malformed_hunk_header_raises_error() -> None:
-    raw = (
-        "diff --git a/a.py b/a.py\n"
-        "--- a/a.py\n"
-        "+++ b/a.py\n"
-        "@@ malformed header @@\n"
-        "+new\n"
-    )
+    raw = "diff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n@@ malformed header @@\n+new\n"
     parser = PatchParser()
     with pytest.raises(PatchValidationError, match="Malformed hunk header"):
         parser.parse(raw)

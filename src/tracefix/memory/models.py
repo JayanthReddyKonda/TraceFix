@@ -24,9 +24,7 @@ class VerificationEvidence(BaseModel):
     duration_seconds: float = 0.0
     passed_tests: list[str] = Field(default_factory=list)
     failed_tests: list[str] = Field(default_factory=list)
-    executed_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    executed_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class ModelMetadata(BaseModel):
@@ -62,9 +60,7 @@ class IncidentRecord(BaseModel):
     lifecycle_status: LifecycleStatus
     eligibility_status: EligibilityStatus = "INELIGIBLE"
     rejection_reason: str | None = None
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @classmethod
     def create(
@@ -84,9 +80,7 @@ class IncidentRecord(BaseModel):
         """Factory creating a canonical incident record with deterministic hash id."""
         diff_bytes = patch_diff.encode("utf-8")
         patch_hash = hashlib.sha256(diff_bytes).hexdigest()
-        digest = hashlib.sha256(
-            f"{case_id}#{revision}#{patch_hash}".encode()
-        ).hexdigest()
+        digest = hashlib.sha256(f"{case_id}#{revision}#{patch_hash}".encode()).hexdigest()
         inc_id = f"inc_{digest[:16]}"
 
         if lifecycle_status is None:

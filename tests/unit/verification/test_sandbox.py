@@ -56,9 +56,7 @@ def test_worktree_sandbox_lifecycle() -> None:
             assert not temp_dir.exists()
 
     # Confirm worktree list no longer contains the temp dir
-    res = subprocess.run(
-        ["git", "worktree", "list"], capture_output=True, text=True, check=True
-    )
+    res = subprocess.run(["git", "worktree", "list"], capture_output=True, text=True, check=True)
     if temp_dir is not None:
         assert str(temp_dir) not in res.stdout
 

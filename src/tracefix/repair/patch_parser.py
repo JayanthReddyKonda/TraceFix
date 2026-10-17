@@ -12,9 +12,7 @@ from pydantic import BaseModel, Field
 
 from tracefix.repair.interfaces import CandidatePatch, PatchValidationError
 
-HUNK_HEADER_RE = re.compile(
-    r"^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@(.*)$"
-)
+HUNK_HEADER_RE = re.compile(r"^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@(.*)$")
 
 
 class DiffHunk(BaseModel):
@@ -77,9 +75,7 @@ class PatchParser:
 
         return diff_text
 
-    def parse(
-        self, raw_output: str, source_model: str = "unknown"
-    ) -> CandidatePatch:
+    def parse(self, raw_output: str, source_model: str = "unknown") -> CandidatePatch:
         """Parse raw model output into a structured CandidatePatch."""
         diff_text = self.extract_diff_block(raw_output)
         lines = diff_text.splitlines()
@@ -168,15 +164,12 @@ class PatchParser:
             file_diffs.append(current_file)
 
         if not file_diffs:
-            raise PatchValidationError(
-                "Failed to parse any valid file diffs from model output"
-            )
+            raise PatchValidationError("Failed to parse any valid file diffs from model output")
 
-        files_touched = sorted({
-            fd.new_path for fd in file_diffs if fd.new_path != "/dev/null"
-        } | {
-            fd.old_path for fd in file_diffs if fd.old_path != "/dev/null"
-        })
+        files_touched = sorted(
+            {fd.new_path for fd in file_diffs if fd.new_path != "/dev/null"}
+            | {fd.old_path for fd in file_diffs if fd.old_path != "/dev/null"}
+        )
 
         patch_hash = hashlib.sha256(diff_text.encode("utf-8")).hexdigest()
 

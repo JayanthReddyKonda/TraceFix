@@ -50,9 +50,7 @@ class StateTransitionRecord(BaseModel):
     from_state: RepairState
     to_state: RepairState
     reason: str
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class RepairStateMachine:
@@ -143,17 +141,13 @@ class RepairStateMachine:
         self._attempt_number += 1
         event = RetryEvent(attempt=self._attempt_number, reason=reason)
         self._retry_history.append(event)
-        self.transition_to(
-            "PATCH_GENERATED", reason=f"Retry #{self._attempt_number}: {reason}"
-        )
+        self.transition_to("PATCH_GENERATED", reason=f"Retry #{self._attempt_number}: {reason}")
 
 
 class SimplePromptBuilder:
     """Assembles prompt for patch generation with context and diff instructions."""
 
-    def build_prompt(
-        self, bug_report: str, context_manifest: dict[str, Any]
-    ) -> str:
+    def build_prompt(self, bug_report: str, context_manifest: dict[str, Any]) -> str:
         items = context_manifest.get("items", [])
         context_snippets: list[str] = []
         for item in items:
@@ -164,9 +158,7 @@ class SimplePromptBuilder:
                 f"### File: {path} (Symbol: {symbol})\n```python\n{content}\n```"
             )
 
-        context_str = (
-            "\n\n".join(context_snippets) if context_snippets else "No prior context."
-        )
+        context_str = "\n\n".join(context_snippets) if context_snippets else "No prior context."
 
         return (
             "You are an automated software repair engine.\n"
@@ -336,9 +328,7 @@ class RepairOrchestrator:
                     break
                 elif last_verification.status == "TEST_FAILED":
                     if sm.can_retry():
-                        sm.record_retry(
-                            f"Tests failed: {last_verification.failed_tests}"
-                        )
+                        sm.record_retry(f"Tests failed: {last_verification.failed_tests}")
                         continue
                     reason = (
                         f"Tests failed and retries exhausted. "

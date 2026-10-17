@@ -37,9 +37,7 @@ class IncidentMemoryRetrievalAdapter:
         ranked: list[RankedItem] = []
         for rank, rec in enumerate(records, start=1):
             target_file = (
-                rec.retrieved_evidence_ids[0]
-                if rec.retrieved_evidence_ids
-                else "incident_memory"
+                rec.retrieved_evidence_ids[0] if rec.retrieved_evidence_ids else "incident_memory"
             )
             item = RankedItem(
                 evidence_id=f"mem_{rec.incident_id}",
@@ -55,9 +53,7 @@ class IncidentMemoryRetrievalAdapter:
 
         return ranked
 
-    def to_evidence_items(
-        self, records: list[IncidentRecord]
-    ) -> list[dict[str, Any]]:
+    def to_evidence_items(self, records: list[IncidentRecord]) -> list[dict[str, Any]]:
         """Format eligible records as context manifest evidence items."""
         evidence_items: list[dict[str, Any]] = []
         for rank, rec in enumerate(records, start=1):

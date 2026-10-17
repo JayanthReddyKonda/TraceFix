@@ -63,8 +63,7 @@ class SubprocessTestRunner:
         exe = Path(cmd[0]).stem.lower()
         if exe not in ALLOWLISTED_RUNNERS and not any(r in exe for r in ALLOWLISTED_RUNNERS):
             raise ValueError(
-                f"Prohibited test executable: '{cmd[0]}'. "
-                f"Allowed runners: {ALLOWLISTED_RUNNERS}"
+                f"Prohibited test executable: '{cmd[0]}'. Allowed runners: {ALLOWLISTED_RUNNERS}"
             )
 
     def run(

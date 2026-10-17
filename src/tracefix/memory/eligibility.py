@@ -43,10 +43,7 @@ class EligibilityEvaluator:
             )
 
         # Rule 2: Explanation integrity
-        if (
-            record.root_cause_explanation is not None
-            and record.root_cause_explanation.verified
-        ):
+        if record.root_cause_explanation is not None and record.root_cause_explanation.verified:
             # Model generated explanations cannot claim verified without external formal proof
             return (
                 "INELIGIBLE",
@@ -56,9 +53,7 @@ class EligibilityEvaluator:
         # Passed all eligibility criteria
         return ("ELIGIBLE", None)
 
-    def is_chronologically_eligible(
-        self, record: IncidentRecord, as_of_time: str
-    ) -> bool:
+    def is_chronologically_eligible(self, record: IncidentRecord, as_of_time: str) -> bool:
         """Enforce Rule 4: Chronological isolation.
 
         Returns True only if record was created strictly before as_of_time.

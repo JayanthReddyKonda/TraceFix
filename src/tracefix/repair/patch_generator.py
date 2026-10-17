@@ -118,14 +118,10 @@ class HttpModelProvider(ModelProvider):
             self.api_key = api_key
         else:
             self.api_key = (
-                os.environ.get("ANTHROPIC_API_KEY")
-                or os.environ.get("OPENROUTER_API_KEY")
-                or ""
+                os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENROUTER_API_KEY") or ""
             )
         self.base_url = (
-            base_url
-            or os.environ.get("ANTHROPIC_BASE_URL")
-            or "https://openrouter.ai/api/v1"
+            base_url or os.environ.get("ANTHROPIC_BASE_URL") or "https://openrouter.ai/api/v1"
         ).rstrip("/")
         self.default_model = default_model
 
@@ -171,9 +167,7 @@ class HttpModelProvider(ModelProvider):
             "User-Agent": "TraceFix-RepairEngine/0.1.0",
         }
 
-        req = urllib.request.Request(
-            endpoint, data=body_bytes, headers=headers, method="POST"
-        )
+        req = urllib.request.Request(endpoint, data=body_bytes, headers=headers, method="POST")
 
         try:
             with urllib.request.urlopen(req, timeout=config.timeout_seconds) as resp:
