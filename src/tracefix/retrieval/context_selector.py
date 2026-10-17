@@ -42,14 +42,15 @@ bind. An item that introduces a not-yet-represented file is labeled
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field, model_validator
 
 from tracefix.graph.models import Provenance
-from tracefix.retrieval.interfaces import RankedItem
+from tracefix.graph.query import GraphPath
+from tracefix.retrieval.interfaces import RankedItem, RetrievalResult
 
 
 class SelectionReason(StrEnum):
@@ -372,3 +373,33 @@ class ContextSelector:
             reason=reason,
             token_contribution=cost,
         )
+
+
+def candidates_from_result(
+    result: RetrievalResult,
+    content_resolver: Callable[[RankedItem], str],
+    *,
+    explain: Callable[[str], GraphPath | None] | None = None,
+    repo: str | None = None,
+    evidence_type: str | None = None,
+) -> list[ContextCandidate]:
+    """Adapt a C2 `RetrievalResult` (e.g. pipeline output) into candidates.
+
+    `content_resolver` supplies the text to token-count per item; `explain`
+    (optional) supplies the graph path for expanded items. This is the only
+    coupling needed between retrieval and context selection.
+    """
+    candidates: list[ContextCandidate] = []
+    for item in result.items:
+        path = explain(item.evidence_id) if explain is not None else None
+        candidates.append(
+            ContextCandidate.from_item(
+                item,
+                content_resolver(item),
+                graph_path=path.node_ids if path is not None else None,
+                expansion_explanation=path.source_label if path is not None else None,
+                repo=repo,
+                evidence_type=evidence_type,
+            )
+        )
+    return candidates

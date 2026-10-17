@@ -32,6 +32,27 @@ def reciprocal_rank_fusion(
     return sorted(scores.items(), key=lambda pair: (-pair[1], pair[0]))
 
 
+def fuse_ids(
+    ranked_id_lists: Sequence[Sequence[str]],
+    method: str = "rrf",
+    k: int = DEFAULT_RRF_K,
+    top_n: int | None = None,
+) -> list[tuple[str, float]]:
+    """Fuse pre-ranked evidence-id lists into (evidence_id, score) pairs.
+
+    Lower-level entry point for callers that have already filtered items (for
+    example, the pipeline drops revision-mismatched items before fusing).
+    """
+    if method not in SUPPORTED_METHODS:
+        raise ValueError(
+            f"unknown fusion method {method!r}; supported: {sorted(SUPPORTED_METHODS)}"
+        )
+    if not ranked_id_lists:
+        return []
+    fused = reciprocal_rank_fusion(ranked_id_lists, k=k)
+    return fused if top_n is None else fused[:top_n]
+
+
 def fuse(
     result_sets: Sequence[RetrievalResult],
     method: str = "rrf",
@@ -39,12 +60,5 @@ def fuse(
     top_n: int | None = None,
 ) -> list[tuple[str, float]]:
     """Fuse complete or partial result sets into (evidence_id, score) pairs."""
-    if method not in SUPPORTED_METHODS:
-        raise ValueError(
-            f"unknown fusion method {method!r}; supported: {sorted(SUPPORTED_METHODS)}"
-        )
-    if not result_sets:
-        return []
     rankings = [[item.evidence_id for item in result.items] for result in result_sets]
-    fused = reciprocal_rank_fusion(rankings, k=k)
-    return fused if top_n is None else fused[:top_n]
+    return fuse_ids(rankings, method=method, k=k, top_n=top_n)
