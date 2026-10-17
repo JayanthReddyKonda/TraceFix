@@ -23,6 +23,11 @@ dev = [
     "ruff>=0.17",
     "mypy>=2.0",
 ]
+# Optional exact tokenizer (Checkpoint 0 D4). CharDiv4TokenCounter is the
+# dependency-free default; install this extra to enable TiktokenTokenCounter.
+tiktoken = [
+    "tiktoken>=0.5",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -53,5 +58,5 @@ strict = true
 warn_unused_configs = true
 
 [[tool.mypy.overrides]]
-module = ["falkordb.*", "rank_bm25.*"]
+module = ["falkordb.*", "rank_bm25.*", "tiktoken.*"]
 ignore_missing_imports = true
