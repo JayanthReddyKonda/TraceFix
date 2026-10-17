@@ -5,7 +5,8 @@ For each upstream instance this checks, against the local clone:
 
 1. the recorded base commit exists;
 2. the gold `patch` applies cleanly at the base commit;
-3. every FAIL_TO_PASS test file exists at the base commit;
+3. every FAIL_TO_PASS test file exists at the base commit or is created by
+   the test patch;
 4. provisional ground-truth files/functions can be derived from the applied
    gold patch (enclosing-function-of-hunk; **provisional pending Q-B7**);
 5. license and pre-cutoff contamination flags.
